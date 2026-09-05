@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>سیستم مدیریت برداشت - آنلاین</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..700;1,14..32,400..700&display=swap" rel="stylesheet" />
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", sans-serif;
+            background: linear-gradient(145deg, #f0f5fa 0%, #e2ecf5 100%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 40px;
+            padding: 28px 32px;
+            box-shadow: 0 25px 50px rgba(0, 20, 40, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 600px) {
+            .app-container {
+                padding: 16px 14px;
+                border-radius: 28px;
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 28px;
+            color: #0b1e33;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            background: #1f3a5f;
+            color: white;
+            padding: 12px;
+            border-radius: 20px;
+            font-size: 20px;
+            box-shadow: 0 6px 14px rgba(26, 67, 113, 0.2);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: #6f8aa8;
+            background: rgba(255,255,255,0.5);
+            padding: 8px 20px;
+            border-radius: 30px;
+        }
+
+        .connection-status .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .connection-status .dot.online {
+            background: #1d8b5e;
+        }
+
+        .connection-status .dot.offline {
+            background: #b53b3b;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .inventory-big {
+            background: linear-gradient(135deg, #1f3a5f 0%, #0f2440 100%);
+            border-radius: 30px;
+            padding: 35px 40px;
+            margin-bottom: 24px;
+            text-align: center;
+            box-shadow: 0 12px 30px rgba(31, 58, 95, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .inventory-big .filter-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .inventory-big .label {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+
+        .inventory-big .amount {
+            font-size: 58px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            line-height: 1.2;
+        }
+
+        .inventory-big .currency {
+            font-size: 26px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            margin-right: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .inventory-big {
+                padding: 20px 16px;
+                border-radius: 24px;
+            }
+            .inventory-big .amount {
+                font-size: 36px;
+            }
+            .inventory-big .currency {
+                font-size: 18px;
+            }
+            .inventory-big .filter-label {
+                font-size: 12px;
+            }
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .action-btn {
+            background: white;
+            border: none;
+            padding: 18px 16px;
+            border-radius: 28px;
+            font-weight: 600;
+            font-size: 18px;
+            color: #1f3a5f;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            backdrop-filter: blur(4px);
+        }
+
+        .action-btn i {
+            font-size: 20px;
+        }
+
+        .action-btn:hover {
+            background: #f5faff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(31, 58, 95, 0.10);
+        }
+
+        .action-btn:active {
+            transform: scale(0.96);
+        }
+
+        .action-btn.primary {
+            background: #1f3a5f;
+            color: white;
+            box-shadow: 0 8px 18px rgba(31, 58, 95, 0.2);
+        }
+
+        .action-btn.primary:hover {
+            background: #132b47;
+        }
+
+        .action-btn.success {
+            background: #1d8b5e;
+            color: white;
+            box-shadow: 0 8px 18px rgba(29, 139, 94, 0.2);
+        }
+
+        .action-btn.success:hover {
+            background: #14734b;
+        }
+
+        .action-btn.warning {
+            background: #f0ad4e;
+            color: white;
+            box-shadow: 0 8px 18px rgba(240, 173, 78, 0.3);
+        }
+
+        .action-btn.warning:hover {
+            background: #d8963a;
+        }
+
+        @media (max-width: 480px) {
+            .action-btn {
+                font-size: 15px;
+                padding: 14px 12px;
+            }
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.4);
+            padding: 14px 20px;
+            border-radius: 30px;
+            margin-bottom: 28px;
+            font-size: 16px;
+            color: #2f4a66;
+            flex-wrap: wrap;
+            gap: 12px;
+            backdrop-filter: blur(4px);
+        }
+
+        .stats-row span i {
+            margin-left: 8px;
+            opacity: 0.7;
+        }
+
+        .stats-row strong {
+            font-size: 18px;
+        }
+
+        /* ========== MODAL ========== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-box {
+            background: white;
+            max-width: 700px;
+            width: 100%;
+            border-radius: 40px;
+            padding: 35px 40px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.15);
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            .modal-box {
+                padding: 24px 18px;
+                border-radius: 28px;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            border-bottom: 2px solid #eef4f9;
+            padding-bottom: 18px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0b1e33;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .modal-header h2 i {
+            color: #1f3a5f;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #7f9bb3;
+            cursor: pointer;
+            padding: 6px 14px;
+            border-radius: 40px;
+            transition: 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #f0f5fc;
+            color: #1f3a5f;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 16px;
+            color: #1f3a5f;
+            margin-bottom: 8px;
+        }
+
+        .form-group label .optional {
+            font-weight: 400;
+            color: #7f9bb3;
+            font-size: 13px;
+        }
+
+        .form-group label .required {
+            color: #b53b3b;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 28px;
+            border: 2px solid #dce5ed;
+            background: #f9fcff;
+            font-size: 16px;
+            transition: 0.2s;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #1f3a5f;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(31, 58, 95, 0.06);
+        }
+
+        .form-group textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 18px;
+            color: white;
+            background: #1f3a5f;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 8px 18px rgba(31, 58, 95, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background: #132b47;
+            transform: scale(0.98);
+        }
+
+        .btn-submit.success {
+            background: #1d8b5e;
+        }
+
+        .btn-submit.success:hover {
+            background: #14734b;
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-icon {
+            background: #1f3a5f;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-icon:hover {
+            background: #132b47;
+            transform: scale(1.05);
+        }
+
+        .select-with-add {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .select-with-add select {
+            flex: 1;
+        }
+
+        /* ========== HISTORY SECTION ========== */
+        .history-section {
+            margin-top: 24px;
+        }
+
+        .history-section .section-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #0b1e33;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .history-section .section-title i {
+            color: #1f3a5f;
+        }
+
+        /* ========== SEARCH ROW ========== */
+        .search-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.6);
+            padding: 12px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .search-row label {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .search-row label i {
+            color: #1f3a5f;
+        }
+
+        .search-row input {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 20px;
+            border-radius: 28px;
+            border: 2px solid #dce5ed;
+            background: #f9fcff;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+
+        .search-row input:focus {
+            border-color: #1f3a5f;
+            box-shadow: 0 0 0 4px rgba(31, 58, 95, 0.06);
+        }
+
+        .search-row .clear-search {
+            background: #fde8e8;
+            color: #a11f2f;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .search-row .clear-search:hover {
+            background: #f8d0d0;
+            transform: scale(1.02);
+        }
+
+        .search-row .search-count {
+            font-size: 13px;
+            color: #6f8aa8;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .search-row {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+            }
+            .search-row label {
+                white-space: normal;
+            }
+            .search-row input {
+                min-width: unset;
+            }
+        }
+
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.5);
+            padding: 12px 18px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+        }
+
+        .filter-row label {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .filter-row label i {
+            color: #1f3a5f;
+        }
+
+        .filter-row select {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 18px;
+            border-radius: 28px;
+            border: 2px solid #dce5ed;
+            background: #f9fcff;
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .filter-row select:focus {
+            border-color: #1f3a5f;
+            box-shadow: 0 0 0 4px rgba(31, 58, 95, 0.06);
+        }
+
+        .filter-row .clear-filter {
+            background: #fde8e8;
+            color: #a11f2f;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .filter-row .clear-filter:hover {
+            background: #f8d0d0;
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 600px) {
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 14px 16px;
+            }
+            .filter-row label {
+                white-space: normal;
+            }
+            .filter-row select {
+                min-width: unset;
+            }
+        }
+
+        .history-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #eef4f9;
+            padding-bottom: 14px;
+        }
+
+        .history-tabs button {
+            padding: 10px 22px;
+            border-radius: 30px;
+            border: 2px solid #dce5ed;
+            background: transparent;
+            font-weight: 500;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #1f3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .history-tabs button i {
+            font-size: 15px;
+        }
+
+        .history-tabs button .badge {
+            background: #dce5ed;
+            color: #1f3a5f;
+            padding: 0 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .history-tabs button.active {
+            background: #1f3a5f;
+            color: white;
+            border-color: #1f3a5f;
+        }
+
+        .history-tabs button.active .badge {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .history-tabs button:hover:not(.active) {
+            background: #eef4f9;
+        }
+
+        .history-tabs .person-total {
+            font-size: 13px;
+            opacity: 0.7;
+            margin-right: 4px;
+        }
+
+        @media (max-width: 600px) {
+            .history-tabs button {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            .history-tabs button .badge {
+                font-size: 11px;
+                padding: 0 8px;
+            }
+        }
+
+        .history-table-wrapper {
+            overflow-x: auto;
+            max-height: 520px;
+            overflow-y: auto;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .history-table-wrapper::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .history-table-wrapper::-webkit-scrollbar-track {
+            background: #eef4f9;
+            border-radius: 20px;
+        }
+
+        .history-table-wrapper::-webkit-scrollbar-thumb {
+            background: #b8ccdd;
+            border-radius: 20px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 16px;
+            min-width: 900px;
+        }
+
+        .history-table thead {
+            background: #1f3a5f;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .history-table thead th {
+            padding: 16px 14px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .history-table tbody tr {
+            border-bottom: 2px solid #eef4f9;
+            transition: 0.15s;
+            background: white;
+        }
+
+        .history-table tbody tr:hover {
+            background: #f5faff;
+        }
+
+        .history-table tbody td {
+            padding: 14px 12px;
+            text-align: center;
+            vertical-align: middle;
+            color: #1f3a5f;
+            font-size: 15px;
+        }
+
+        .history-table .type-badge {
+            padding: 5px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .history-table .type-badge.add {
+            background: #d4edda;
+            color: #0f6b3a;
+        }
+
+        .history-table .type-badge.withdraw {
+            background: #f8d7da;
+            color: #a11f2f;
+        }
+
+        .history-table .amount-add {
+            color: #0f6b3a;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .history-table .amount-withdraw {
+            color: #a11f2f;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .history-table .action-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .history-table .action-btns button {
+            padding: 7px 16px;
+            border: none;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-table .action-btns .edit-btn {
+            background: #e3eef9;
+            color: #1f3a5f;
+        }
+
+        .history-table .action-btns .edit-btn:hover {
+            background: #c8dbea;
+            transform: scale(1.05);
+        }
+
+        .history-table .action-btns .delete-btn {
+            background: #fde8e8;
+            color: #a11f2f;
+        }
+
+        .history-table .action-btns .delete-btn:hover {
+            background: #f8d0d0;
+            transform: scale(1.05);
+        }
+
+        .history-table .registrar-tag,
+        .history-table .source-tag {
+            background: #eef4f9;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .history-empty {
+            text-align: center;
+            color: #7a94ae;
+            padding: 50px 0;
+            font-size: 17px;
+        }
+
+        .history-empty i {
+            font-size: 40px;
+            opacity: 0.4;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .modal-box {
+                padding: 20px 16px;
+            }
+            .modal-header h2 {
+                font-size: 20px;
+            }
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                padding: 14px 16px;
+                font-size: 15px;
+            }
+            .btn-submit {
+                font-size: 16px;
+                padding: 16px;
+            }
+            .history-table {
+                font-size: 14px;
+                min-width: 700px;
+            }
+            .history-table thead th,
+            .history-table tbody td {
+                padding: 10px 8px;
+            }
+            .history-table .action-btns button {
+                padding: 5px 12px;
+                font-size: 12px;
+            }
+            .inventory-big .amount {
+                font-size: 40px;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f3a5f;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        .toast.success {
+            background: #1d8b5e;
+        }
+
+        .toast.error {
+            background: #b53b3b;
+        }
+
+        .toast.info {
+            background: #1f3a5f;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .loading-spinner i {
+            font-size: 40px;
+            color: #1f3a5f;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-spinner p {
+            margin-top: 12px;
+            color: #1f3a5f;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <i class="fas fa-spinner"></i>
+        <p>در حال ارتباط با سرور...</p>
+    </div>
+</div>
+
+<div class="app-container">
+    <div class="header">
+        <h1><i class="fas fa-warehouse"></i> مدیریت</h1>
+        <div class="connection-status">
+            <span class="dot offline" id="statusDot"></span>
+            <span id="statusText">در حال اتصال...</span>
+        </div>
+    </div>
+
+    <div class="inventory-big" id="inventoryBox">
+        <div class="filter-label" id="filterLabel">نمایش همه</div>
+        <div class="label">موجودی فعلی</div>
+        <div class="amount">
+            <span id="inventoryDisplay">0</span>
+            <span class="currency">افغانی</span>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <span><i class="fas fa-arrow-up" style="color:#1d8b5e;"></i> کل افزودن: <strong id="totalAddCount">0</strong></span>
+        <span><i class="fas fa-arrow-down" style="color:#a11f2f;"></i> کل برداشت: <strong id="totalWithdrawCount">0</strong></span>
+        <span><i class="fas fa-history"></i> کل تراکنش: <strong id="totalTxCount">0</strong></span>
+    </div>
+
+    <div class="action-grid">
+        <button class="action-btn primary" id="openAddModalBtn">
+            <i class="fas fa-plus-circle"></i> افزودن موجودی
+        </button>
+        <button class="action-btn success" id="openWithdrawModalBtn">
+            <i class="fas fa-arrow-left"></i> برداشت
+        </button>
+    </div>
+
+    <!-- ===== HISTORY SECTION ===== -->
+    <div class="history-section">
+        <div class="section-title">
+            <i class="fas fa-table"></i> تاریخچه کامل
+            <span style="font-size:15px; font-weight:400; color:#6f8aa8; margin-right:10px;">(همه تراکنش‌ها)</span>
+        </div>
+
+        <!-- ===== SEARCH ROW ===== -->
+        <div class="search-row">
+            <label><i class="fas fa-search"></i> جستجو:</label>
+            <input type="text" id="searchInput" placeholder="جستجو در تمام ستون‌ها (تاریخ، نام، مقدار، توضیحات...)" />
+            <button class="clear-search" id="clearSearch">
+                <i class="fas fa-times-circle"></i> پاک کردن
+            </button>
+            <span class="search-count" id="searchCount">۰ نتیجه</span>
+        </div>
+
+        <div class="filter-row">
+            <label><i class="fas fa-filter"></i> فیلتر بر اساس "از طریق":</label>
+            <select id="sourceFilter">
+                <option value="">— همه منابع —</option>
+            </select>
+            <button class="clear-filter" id="clearSourceFilter">
+                <i class="fas fa-times-circle"></i> پاک کردن فیلتر
+            </button>
+        </div>
+
+        <div class="history-tabs" id="historyTabs">
+            <button class="active" data-filter="all">
+                <i class="fas fa-list"></i> همه
+                <span class="badge" id="allCount">0</span>
+            </button>
+            <button data-filter="add">
+                <i class="fas fa-plus-circle"></i> افزودن
+                <span class="badge" id="addCount">0</span>
+            </button>
+            <button data-filter="withdraw">
+                <i class="fas fa-arrow-left"></i> برداشت
+                <span class="badge" id="withdrawCount">0</span>
+            </button>
+            <button data-filter="حاجی محمد رحیم">
+                <i class="fas fa-user"></i> حاجی محمد رحیم
+                <span class="badge" id="hajiCount">0</span>
+                <span class="person-total" id="hajiTotal">(۰)</span>
+            </button>
+            <button data-filter="استا امرالله">
+                <i class="fas fa-user"></i> استا امرالله
+                <span class="badge" id="ostaCount">0</span>
+                <span class="person-total" id="ostaTotal">(۰)</span>
+            </button>
+            <button data-filter="مجیب الرحمن">
+                <i class="fas fa-user"></i> مجیب الرحمن
+                <span class="badge" id="mojibCount">0</span>
+                <span class="person-total" id="mojibTotal">(۰)</span>
+            </button>
+            <button data-filter="اسدالله">
+                <i class="fas fa-user"></i> اسدالله
+                <span class="badge" id="asadCount">0</span>
+                <span class="person-total" id="asadTotal">(۰)</span>
+            </button>
+            <button data-filter="احسان الله">
+                <i class="fas fa-user"></i> احسان الله
+                <span class="badge" id="ehsanCount">0</span>
+                <span class="person-total" id="ehsanTotal">(۰)</span>
+            </button>
+            <button data-filter="مصارف دوکان">
+                <i class="fas fa-store"></i> مصارف دوکان
+                <span class="badge" id="dokanCount">0</span>
+                <span class="person-total" id="dokanTotal">(۰)</span>
+            </button>
+            <button data-filter="پرداخت به ایران">
+                <i class="fas fa-money-bill-transfer"></i> پرداخت به ایران
+                <span class="badge" id="iranCount">0</span>
+                <span class="person-total" id="iranTotal">(۰)</span>
+            </button>
+        </div>
+
+        <div class="history-table-wrapper">
+            <table class="history-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th>تاریخ</th>
+                        <th>نوع</th>
+                        <th>برداشت کننده</th>
+                        <th>مقدار</th>
+                        <th>ثبت کننده</th>
+                        <th>از طریق</th>
+                        <th>توضیحات</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr>
+                        <td colspan="9">
+                            <div class="history-empty">
+                                <i class="fas fa-inbox"></i>
+                                در حال بارگذاری...
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: افزودن موجودی -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle"></i> افزودن موجودی</h2>
+            <button class="modal-close" data-close="addModal">&times;</button>
+        </div>
+        <form id="addForm">
+            <div class="form-group">
+                <label>تاریخ میلادی <span class="required">*</span></label>
+                <input type="date" id="addDate" />
+            </div>
+            <div class="form-group">
+                <label>ثبت کننده <span class="required">*</span></label>
+                <select id="addRegistrar">
+                    <option value="خیرالله">خیرالله</option>
+                    <option value="مجیب الرحمن">مجیب الرحمن</option>
+                    <option value="احسان الله">احسان الله</option>
+                    <option value="اسدالله">اسدالله</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>از طریق <span class="required">*</span></label>
+                <div class="select-with-add">
+                    <select id="addSourceSelect">
+                        <option value="">— در حال بارگذاری —</option>
+                    </select>
+                    <button type="button" class="btn-icon" id="addSourceBtn" title="اضافه کردن منبع جدید">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>مقدار (افغانی) <span class="required">*</span></label>
+                <input type="number" id="addAmount" placeholder="مثال: ۵۰۰" min="1" required />
+            </div>
+            <div class="form-group">
+                <label>توضیحات <span class="optional">(اختیاری)</span></label>
+                <textarea id="addDescription" placeholder="دلیل افزودن موجودی ..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit success" id="addSubmitBtn">
+                <i class="fas fa-save"></i> ثبت افزودن
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: برداشت -->
+<div class="modal-overlay" id="withdrawModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2><i class="fas fa-arrow-left"></i> برداشت</h2>
+            <button class="modal-close" data-close="withdrawModal">&times;</button>
+        </div>
+        <form id="withdrawForm">
+            <div class="form-group">
+                <label>تاریخ میلادی <span class="required">*</span></label>
+                <input type="date" id="withdrawDate" />
+            </div>
+            <div class="form-group">
+                <label>ثبت کننده <span class="required">*</span></label>
+                <select id="withdrawRegistrar">
+                    <option value="خیرالله">خیرالله</option>
+                    <option value="مجیب الرحمن">مجیب الرحمن</option>
+                    <option value="احسان الله">احسان الله</option>
+                    <option value="اسدالله">اسدالله</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>برداشت کننده <span class="required">*</span></label>
+                <select id="withdrawPerson">
+                    <option value="حاجی محمد رحیم">حاجی محمد رحیم</option>
+                    <option value="استا امرالله">استا امرالله</option>
+                    <option value="مجیب الرحمن">مجیب الرحمن</option>
+                    <option value="اسدالله">اسدالله</option>
+                    <option value="احسان الله">احسان الله</option>
+                    <option value="مصارف دوکان">مصارف دوکان</option>
+                    <option value="پرداخت به ایران">پرداخت به ایران</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>مقدار برداشت (افغانی) <span class="required">*</span></label>
+                <input type="number" id="withdrawAmount" placeholder="مثال: ۱۲۰" min="1" required />
+            </div>
+            <div class="form-group">
+                <label>توضیحات <span class="optional">(اختیاری)</span></label>
+                <textarea id="withdrawDesc" placeholder="دلیل برداشت ..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit" id="withdrawSubmitBtn">
+                <i class="fas fa-check-circle"></i> ثبت برداشت
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: ویرایش -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2><i class="fas fa-edit"></i> ویرایش تراکنش</h2>
+            <button class="modal-close" data-close="editModal">&times;</button>
+        </div>
+        <form id="editForm">
+            <input type="hidden" id="editId" />
+            <div class="form-group">
+                <label>تاریخ میلادی <span class="required">*</span></label>
+                <input type="date" id="editDate" />
+            </div>
+            <div class="form-group">
+                <label>ثبت کننده <span class="required">*</span></label>
+                <select id="editRegistrar">
+                    <option value="خیرالله">خیرالله</option>
+                    <option value="مجیب الرحمن">مجیب الرحمن</option>
+                    <option value="احسان الله">احسان الله</option>
+                    <option value="اسدالله">اسدالله</option>
+                </select>
+            </div>
+            <div class="form-group" id="editPersonGroup">
+                <label>برداشت کننده <span class="required">*</span></label>
+                <select id="editPerson">
+                    <option value="حاجی محمد رحیم">حاجی محمد رحیم</option>
+                    <option value="استا امرالله">استا امرالله</option>
+                    <option value="مجیب الرحمن">مجیب الرحمن</option>
+                    <option value="اسدالله">اسدالله</option>
+                    <option value="احسان الله">احسان الله</option>
+                    <option value="مصارف دوکان">مصارف دوکان</option>
+                    <option value="پرداخت به ایران">پرداخت به ایران</option>
+                </select>
+            </div>
+            <div class="form-group" id="editSourceGroup">
+                <label>از طریق <span class="required">*</span></label>
+                <select id="editSourceSelect">
+                    <option value="">— در حال بارگذاری —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>مقدار (افغانی) <span class="required">*</span></label>
+                <input type="number" id="editAmount" min="1" required />
+            </div>
+            <div class="form-group">
+                <label>توضیحات <span class="optional">(اختیاری)</span></label>
+                <textarea id="editDescription" placeholder="توضیحات ..."></textarea>
+            </div>
+            <button type="submit" class="btn-submit" id="editSubmitBtn">
+                <i class="fas fa-save"></i> ذخیره تغییرات
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL: اضافه کردن منبع جدید -->
+<div class="modal-overlay" id="sourceModal">
+    <div class="modal-box" style="max-width:450px;">
+        <div class="modal-header">
+            <h2><i class="fas fa-plus-circle"></i> افزودن منبع جدید</h2>
+            <button class="modal-close" data-close="sourceModal">&times;</button>
+        </div>
+        <form id="sourceForm">
+            <div class="form-group">
+                <label>نام منبع <span class="required">*</span></label>
+                <input type="text" id="newSourceName" placeholder="مثال: فروش نقدی" required style="font-size:16px; padding:16px 20px;" />
+            </div>
+            <button type="submit" class="btn-submit success" id="sourceSubmitBtn">
+                <i class="fas fa-save"></i> افزودن منبع
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- Toast Notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+    (function() {
+        "use strict";
+
+        // ============================================
+        // FIREBASE CONFIG
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBozwUW1S32xUapDPnBPtEJ-JWPXL7XYgY",
+            authDomain: "inspect-code-system.firebaseapp.com",
+            databaseURL: "https://inspect-code-system-default-rtdb.firebaseio.com",
+            projectId: "inspect-code-system",
+            storageBucket: "inspect-code-system.firebasestorage.app",
+            messagingSenderId: "1035401337404",
+            appId: "1:1035401337404:web:294609314efde2d1fec139",
+            measurementId: "G-K8YNZ1K9ZW"
+        };
+
+        let database = null;
+        let isConnected = false;
+
+        // ============================================
+        // STATE
+        // ============================================
+        let transactions = [];
+        let inventory = 0;
+        let currentFilter = 'all';
+        let currentSourceFilter = '';
+        let currentSearchQuery = '';
+        let sources = [];
+        let isInitialLoad = true;
+        let toastTimer = null;
+
+        // ============================================
+        // DOM REFS
+        // ============================================
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const inventoryDisplay = document.getElementById('inventoryDisplay');
+        const filterLabel = document.getElementById('filterLabel');
+        const totalAddCount = document.getElementById('totalAddCount');
+        const totalWithdrawCount = document.getElementById('totalWithdrawCount');
+        const totalTxCount = document.getElementById('totalTxCount');
+
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        const addModal = document.getElementById('addModal');
+        const withdrawModal = document.getElementById('withdrawModal');
+        const editModal = document.getElementById('editModal');
+        const sourceModal = document.getElementById('sourceModal');
+
+        const addDate = document.getElementById('addDate');
+        const addRegistrar = document.getElementById('addRegistrar');
+        const addSourceSelect = document.getElementById('addSourceSelect');
+        const addAmount = document.getElementById('addAmount');
+        const addDescription = document.getElementById('addDescription');
+        const addForm = document.getElementById('addForm');
+        const addSubmitBtn = document.getElementById('addSubmitBtn');
+        const addSourceBtn = document.getElementById('addSourceBtn');
+
+        const withdrawDate = document.getElementById('withdrawDate');
+        const withdrawRegistrar = document.getElementById('withdrawRegistrar');
+        const withdrawPerson = document.getElementById('withdrawPerson');
+        const withdrawAmount = document.getElementById('withdrawAmount');
+        const withdrawDesc = document.getElementById('withdrawDesc');
+        const withdrawForm = document.getElementById('withdrawForm');
+        const withdrawSubmitBtn = document.getElementById('withdrawSubmitBtn');
+
+        const editId = document.getElementById('editId');
+        const editDate = document.getElementById('editDate');
+        const editRegistrar = document.getElementById('editRegistrar');
+        const editPerson = document.getElementById('editPerson');
+        const editPersonGroup = document.getElementById('editPersonGroup');
+        const editSourceSelect = document.getElementById('editSourceSelect');
+        const editSourceGroup = document.getElementById('editSourceGroup');
+        const editAmount = document.getElementById('editAmount');
+        const editDescription = document.getElementById('editDescription');
+        const editForm = document.getElementById('editForm');
+        const editSubmitBtn = document.getElementById('editSubmitBtn');
+
+        const historyTableBody = document.getElementById('historyTableBody');
+        const historyTabs = document.getElementById('historyTabs');
+        const tabBtns = historyTabs.querySelectorAll('button');
+
+        const searchInput = document.getElementById('searchInput');
+        const clearSearch = document.getElementById('clearSearch');
+        const searchCount = document.getElementById('searchCount');
+
+        const sourceFilter = document.getElementById('sourceFilter');
+        const clearSourceFilter = document.getElementById('clearSourceFilter');
+
+        const allCount = document.getElementById('allCount');
+        const addCount = document.getElementById('addCount');
+        const withdrawCount = document.getElementById('withdrawCount');
+        const hajiCount = document.getElementById('hajiCount');
+        const ostaCount = document.getElementById('ostaCount');
+        const mojibCount = document.getElementById('mojibCount');
+        const asadCount = document.getElementById('asadCount');
+        const ehsanCount = document.getElementById('ehsanCount');
+        const dokanCount = document.getElementById('dokanCount');
+        const iranCount = document.getElementById('iranCount');
+        const hajiTotal = document.getElementById('hajiTotal');
+        const ostaTotal = document.getElementById('ostaTotal');
+        const mojibTotal = document.getElementById('mojibTotal');
+        const asadTotal = document.getElementById('asadTotal');
+        const ehsanTotal = document.getElementById('ehsanTotal');
+        const dokanTotal = document.getElementById('dokanTotal');
+        const iranTotal = document.getElementById('iranTotal');
+
+        const newSourceName = document.getElementById('newSourceName');
+        const sourceForm = document.getElementById('sourceForm');
+        const sourceSubmitBtn = document.getElementById('sourceSubmitBtn');
+
+        const toast = document.getElementById('toast');
+
+        const openAddBtn = document.getElementById('openAddModalBtn');
+        const openWithdrawBtn = document.getElementById('openWithdrawModalBtn');
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // ============================================
+        // HELPERS
+        // ============================================
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        function getTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        function getPersianDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }) + 
+                   ' ' + date.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function setLoading(show) {
+            if (show) {
+                loadingOverlay.classList.add('active');
+            } else {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+
+        function setConnectionStatus(online) {
+            isConnected = online;
+            if (online) {
+                statusDot.className = 'dot online';
+                statusText.textContent = 'متصل به سرور';
+            } else {
+                statusDot.className = 'dot offline';
+                statusText.textContent = 'قطع ارتباط';
+            }
+        }
+
+        // ============================================
+        // UPDATE ALL SELECTS
+        // ============================================
+        function updateAllSelects() {
+            addSourceSelect.innerHTML = '';
+            if (sources.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '— هیچ منبعی ثبت نشده —';
+                addSourceSelect.appendChild(option);
+            } else {
+                sources.forEach(source => {
+                    const option = document.createElement('option');
+                    option.value = source.name;
+                    option.textContent = source.name;
+                    addSourceSelect.appendChild(option);
+                });
+            }
+
+            editSourceSelect.innerHTML = '';
+            if (sources.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '— هیچ منبعی ثبت نشده —';
+                editSourceSelect.appendChild(option);
+            } else {
+                sources.forEach(source => {
+                    const option = document.createElement('option');
+                    option.value = source.name;
+                    option.textContent = source.name;
+                    editSourceSelect.appendChild(option);
+                });
+            }
+
+            sourceFilter.innerHTML = '<option value="">— همه منابع —</option>';
+            if (sources.length > 0) {
+                sources.forEach(source => {
+                    const option = document.createElement('option');
+                    option.value = source.name;
+                    option.textContent = source.name;
+                    sourceFilter.appendChild(option);
+                });
+            }
+        }
+
+        // ============================================
+        // UPDATE UI & INVENTORY BY FILTER
+        // ============================================
+        function updateUI() {
+            let filtered = getFilteredTransactions();
+
+            let total = 0;
+            let addTotal = 0;
+            let withdrawTotal = 0;
+            for (const t of filtered) {
+                if (t.type === 'add') {
+                    total += t.amount;
+                    addTotal += t.amount;
+                } else if (t.type === 'withdraw') {
+                    total -= t.amount;
+                    withdrawTotal += t.amount;
+                }
+            }
+            inventory = total;
+
+            inventoryDisplay.textContent = formatNumber(inventory);
+
+            const filterNames = {
+                'all': 'نمایش همه',
+                'add': 'نمایش افزودن‌ها',
+                'withdraw': 'نمایش برداشت‌ها',
+                'حاجی محمد رحیم': 'نمایش برداشت‌های حاجی محمد رحیم',
+                'استا امرالله': 'نمایش برداشت‌های استا امرالله',
+                'مجیب الرحمن': 'نمایش برداشت‌های مجیب الرحمن',
+                'اسدالله': 'نمایش برداشت‌های اسدالله',
+                'احسان الله': 'نمایش برداشت‌های احسان الله',
+                'مصارف دوکان': 'نمایش برداشت‌های مصارف دوکان',
+                'پرداخت به ایران': 'نمایش برداشت‌های پرداخت به ایران'
+            };
+            filterLabel.textContent = filterNames[currentFilter] || 'نمایش همه';
+
+            const allAdds = transactions.filter(t => t.type === 'add');
+            const allWithdraws = transactions.filter(t => t.type === 'withdraw');
+            totalAddCount.textContent = allAdds.length;
+            totalWithdrawCount.textContent = allWithdraws.length;
+            totalTxCount.textContent = transactions.length;
+
+            allCount.textContent = transactions.length;
+            addCount.textContent = allAdds.length;
+            withdrawCount.textContent = allWithdraws.length;
+
+            const persons = ['حاجی محمد رحیم', 'استا امرالله', 'مجیب الرحمن', 'اسدالله', 'احسان الله', 'مصارف دوکان', 'پرداخت به ایران'];
+            const counts = [hajiCount, ostaCount, mojibCount, asadCount, ehsanCount, dokanCount, iranCount];
+            const totals = [hajiTotal, ostaTotal, mojibTotal, asadTotal, ehsanTotal, dokanTotal, iranTotal];
+
+            persons.forEach((person, index) => {
+                const items = transactions.filter(t => t.type === 'withdraw' && t.person === person);
+                counts[index].textContent = items.length;
+                const totalAmount = items.reduce((sum, t) => sum + t.amount, 0);
+                totals[index].textContent = `(${formatNumber(totalAmount)})`;
+            });
+        }
+
+        function getFilteredTransactions() {
+            let filtered = [...transactions];
+
+            if (currentFilter === 'add') {
+                filtered = filtered.filter(t => t.type === 'add');
+            } else if (currentFilter === 'withdraw') {
+                filtered = filtered.filter(t => t.type === 'withdraw');
+            } else if (currentFilter !== 'all') {
+                filtered = filtered.filter(t => t.type === 'withdraw' && t.person === currentFilter);
+            }
+
+            if (currentSourceFilter) {
+                filtered = filtered.filter(t => t.source === currentSourceFilter);
+            }
+
+            if (currentSearchQuery) {
+                const query = currentSearchQuery.toLowerCase();
+                filtered = filtered.filter(t => {
+                    const searchFields = [
+                        t.date || '',
+                        t.type === 'add' ? 'افزودن' : 'برداشت',
+                        t.person || '',
+                        t.registrar || '',
+                        t.source || '',
+                        t.description || '',
+                        t.amount ? t.amount.toString() : ''
+                    ];
+                    return searchFields.some(field => field.toLowerCase().includes(query));
+                });
+            }
+
+            return filtered;
+        }
+
+        // ============================================
+        // RENDER HISTORY TABLE
+        // ============================================
+        function renderHistory() {
+            const filtered = getFilteredTransactions();
+
+            searchCount.textContent = `${filtered.length} نتیجه`;
+
+            if (filtered.length === 0) {
+                historyTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9">
+                            <div class="history-empty">
+                                <i class="fas fa-inbox"></i>
+                                ${currentSearchQuery ? 'هیچ نتیجه‌ای برای جستجوی شما یافت نشد' : 
+                                  currentSourceFilter ? 'هیچ تراکنشی با این منبع یافت نشد' : 
+                                  'هیچ تراکنشی ثبت نشده'}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            const sorted = [...filtered].sort((a, b) => b.timestamp - a.timestamp);
+
+            sorted.forEach((item, index) => {
+                const isAdd = item.type === 'add';
+                const typeLabel = isAdd ? 'افزودن' : 'برداشت';
+                const typeClass = isAdd ? 'add' : 'withdraw';
+                const amountClass = isAdd ? 'amount-add' : 'amount-withdraw';
+                const sign = isAdd ? '+' : '-';
+                const personDisplay = item.person || '—';
+                const registrarDisplay = item.registrar || '—';
+                const sourceDisplay = item.source || '—';
+                const descriptionDisplay = item.description || '—';
+                const dateDisplay = item.date || getPersianDate(item.timestamp);
+
+                const highlightText = (text) => {
+                    if (!currentSearchQuery || !text) return text;
+                    const query = currentSearchQuery.toLowerCase();
+                    const lowerText = text.toLowerCase();
+                    if (!lowerText.includes(query)) return text;
+                    const index = lowerText.indexOf(query);
+                    return text.substring(0, index) + 
+                           '<span style="background:#ffeb3b; padding:0 4px; border-radius:4px;">' + 
+                           text.substring(index, index + query.length) + 
+                           '</span>' + 
+                           text.substring(index + query.length);
+                };
+
+                const highlightedPerson = highlightText(personDisplay);
+                const highlightedRegistrar = highlightText(registrarDisplay);
+                const highlightedSource = highlightText(sourceDisplay);
+                const highlightedDescription = highlightText(descriptionDisplay);
+                const highlightedDate = highlightText(dateDisplay);
+                const highlightedAmount = highlightText(formatNumber(item.amount));
+
+                html += `
+                    <tr>
+                        <td style="font-size:16px; font-weight:600;">${index + 1}</td>
+                        <td style="font-size:15px;">${highlightedDate}</td>
+                        <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
+                        <td style="font-size:15px; font-weight:500;">${highlightedPerson}</td>
+                        <td class="${amountClass}">${sign} ${highlightedAmount}</td>
+                        <td><span class="registrar-tag">${highlightedRegistrar}</span></td>
+                        <td><span class="source-tag">${highlightedSource}</span></td>
+                        <td style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px;" title="${descriptionDisplay}">${highlightedDescription}</td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="edit-btn" data-id="${item.id}"><i class="fas fa-edit"></i> ویرایش</button>
+                                <button class="delete-btn" data-id="${item.id}"><i class="fas fa-trash"></i> حذف</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            historyTableBody.innerHTML = html;
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    openEditModal(id);
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    deleteTransaction(id);
+                });
+            });
+        }
+
+        // ============================================
+        // FIREBASE OPERATIONS
+        // ============================================
+        function initFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                console.log('Firebase initialized successfully');
+                return true;
+            } catch (error) {
+                console.error('Firebase init failed:', error);
+                showToast('خطا در اتصال به سرور!', 'error');
+                return false;
+            }
+        }
+
+        function loadDataFromFirebase() {
+            setLoading(true);
+
+            const transactionsRef = database.ref('transactions');
+            transactionsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    transactions = Object.values(data);
+                    transactions.sort((a, b) => a.timestamp - b.timestamp);
+                } else {
+                    transactions = [];
+                }
+                updateUI();
+                renderHistory();
+                setConnectionStatus(true);
+                if (isInitialLoad) {
+                    isInitialLoad = false;
+                    setLoading(false);
+                    showToast('داده‌ها با موفقیت بارگذاری شدند', 'success');
+                }
+            }, (error) => {
+                console.error('Error loading transactions:', error);
+                setConnectionStatus(false);
+                setLoading(false);
+                showToast('خطا در بارگذاری داده‌ها!', 'error');
+            });
+
+            const sourcesRef = database.ref('sources');
+            sourcesRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    sources = Object.values(data);
+                } else {
+                    sources = [];
+                }
+                updateAllSelects();
+            }, (error) => {
+                console.error('Error loading sources:', error);
+                sources = [];
+                updateAllSelects();
+            });
+        }
+
+        function saveToFirebase(path, data) {
+            return new Promise((resolve, reject) => {
+                const updates = {};
+                updates[path] = data;
+                database.ref().update(updates)
+                    .then(() => resolve())
+                    .catch((error) => reject(error));
+            });
+        }
+
+        function deleteFromFirebase(path) {
+            return new Promise((resolve, reject) => {
+                database.ref(path).remove()
+                    .then(() => resolve())
+                    .catch((error) => reject(error));
+            });
+        }
+
+        // ============================================
+        // CRUD OPERATIONS
+        // ============================================
+        function addTransaction(transaction) {
+            setLoading(true);
+            transaction.id = generateId();
+            transaction.timestamp = Date.now();
+            
+            const path = `transactions/${transaction.id}`;
+            saveToFirebase(path, transaction)
+                .then(() => {
+                    setLoading(false);
+                    const typeLabel = transaction.type === 'add' ? 'افزودن' : 'برداشت';
+                    showToast(`${typeLabel} با موفقیت ثبت شد`, 'success');
+                })
+                .catch((error) => {
+                    console.error('Error saving transaction:', error);
+                    setLoading(false);
+                    showToast('خطا در ثبت تراکنش!', 'error');
+                });
+        }
+
+        function deleteTransaction(id) {
+            if (!confirm('آیا از حذف این تراکنش مطمئن هستید؟')) return;
+
+            setLoading(true);
+            const item = transactions.find(t => t.id === id);
+            if (!item) {
+                setLoading(false);
+                return;
+            }
+
+            const path = `transactions/${id}`;
+            deleteFromFirebase(path)
+                .then(() => {
+                    setLoading(false);
+                    showToast('تراکنش با موفقیت حذف شد', 'success');
+                })
+                .catch((error) => {
+                    console.error('Error deleting transaction:', error);
+                    setLoading(false);
+                    showToast('خطا در حذف تراکنش!', 'error');
+                });
+        }
+
+        function editTransaction(id, updatedData) {
+            setLoading(true);
+            const item = transactions.find(t => t.id === id);
+            if (!item) {
+                setLoading(false);
+                return;
+            }
+
+            const path = `transactions/${id}`;
+            saveToFirebase(path, { ...item, ...updatedData })
+                .then(() => {
+                    setLoading(false);
+                    showToast('تراکنش با موفقیت ویرایش شد', 'success');
+                })
+                .catch((error) => {
+                    console.error('Error updating transaction:', error);
+                    setLoading(false);
+                    showToast('خطا در ویرایش تراکنش!', 'error');
+                });
+        }
+
+        function addSource(sourceName) {
+            setLoading(true);
+            const id = generateId();
+            const source = { id: id, name: sourceName };
+            const path = `sources/${id}`;
+            saveToFirebase(path, source)
+                .then(() => {
+                    setLoading(false);
+                    showToast(`منبع "${sourceName}" با موفقیت اضافه شد`, 'success');
+                })
+                .catch((error) => {
+                    console.error('Error adding source:', error);
+                    setLoading(false);
+                    showToast('خطا در افزودن منبع!', 'error');
+                });
+        }
+
+        // ============================================
+        // MODAL HANDLERS
+        // ============================================
+        function openModal(modal) {
+            modal.classList.add('active');
+        }
+
+        function closeModal(modal) {
+            modal.classList.remove('active');
+        }
+
+        // ============================================
+        // ADD FORM
+        // ============================================
+        function handleAdd(e) {
+            e.preventDefault();
+
+            const date = addDate.value;
+            const registrar = addRegistrar.value;
+            const source = addSourceSelect.value;
+            const amountRaw = parseInt(addAmount.value.trim(), 10);
+            const description = addDescription.value.trim();
+
+            if (!date) {
+                alert('لطفاً تاریخ را انتخاب کنید.');
+                return;
+            }
+            if (!registrar) {
+                alert('لطفاً ثبت کننده را انتخاب کنید.');
+                return;
+            }
+            if (!source || source === '— هیچ منبعی ثبت نشده —') {
+                alert('لطفاً منبع (از طریق) را انتخاب یا اضافه کنید.');
+                return;
+            }
+            if (!amountRaw || amountRaw <= 0) {
+                alert('مقدار باید عددی مثبت باشد.');
+                return;
+            }
+
+            addTransaction({
+                type: 'add',
+                registrar: registrar,
+                source: source,
+                amount: amountRaw,
+                description: description || '(بدون توضیح)',
+                date: date
+            });
+
+            addAmount.value = '';
+            addDescription.value = '';
+            addDate.value = getTodayDate();
+            closeModal(addModal);
+        }
+
+        // ============================================
+        // WITHDRAW FORM
+        // ============================================
+        function handleWithdraw(e) {
+            e.preventDefault();
+
+            const date = withdrawDate.value;
+            const registrar = withdrawRegistrar.value;
+            const person = withdrawPerson.value;
+            const amountRaw = parseInt(withdrawAmount.value.trim(), 10);
+            const description = withdrawDesc.value.trim();
+
+            if (!date) {
+                alert('لطفاً تاریخ را انتخاب کنید.');
+                return;
+            }
+            if (!registrar) {
+                alert('لطفاً ثبت کننده را انتخاب کنید.');
+                return;
+            }
+            if (!amountRaw || amountRaw <= 0) {
+                alert('مقدار برداشت باید عددی مثبت باشد.');
+                return;
+            }
+
+            addTransaction({
+                type: 'withdraw',
+                registrar: registrar,
+                person: person,
+                amount: amountRaw,
+                description: description || '(بدون توضیح)',
+                date: date
+            });
+
+            withdrawAmount.value = '';
+            withdrawDesc.value = '';
+            withdrawDate.value = getTodayDate();
+            closeModal(withdrawModal);
+        }
+
+        // ============================================
+        // EDIT FORM
+        // ============================================
+        function openEditModal(id) {
+            const item = transactions.find(t => t.id === id);
+            if (!item) return;
+
+            editId.value = id;
+            editDate.value = item.date || getTodayDate();
+            editRegistrar.value = item.registrar || 'خیرالله';
+            editAmount.value = item.amount;
+            editDescription.value = item.description || '';
+
+            if (item.type === 'add') {
+                editSourceGroup.style.display = 'block';
+                if (item.source && sources.some(s => s.name === item.source)) {
+                    editSourceSelect.value = item.source;
+                } else if (sources.length > 0) {
+                    editSourceSelect.value = sources[0].name;
+                }
+            } else {
+                editSourceGroup.style.display = 'none';
+            }
+
+            if (item.type === 'withdraw') {
+                editPersonGroup.style.display = 'block';
+                editPerson.value = item.person || 'حاجی محمد رحیم';
+            } else {
+                editPersonGroup.style.display = 'none';
+            }
+
+            openModal(editModal);
+        }
+
+        function handleEdit(e) {
+            e.preventDefault();
+
+            const id = editId.value;
+            const item = transactions.find(t => t.id === id);
+            if (!item) {
+                alert('تراکنش یافت نشد!');
+                return;
+            }
+
+            const date = editDate.value;
+            const registrar = editRegistrar.value;
+            const amount = parseInt(editAmount.value.trim(), 10);
+
+            if (!date) {
+                alert('لطفاً تاریخ را انتخاب کنید.');
+                return;
+            }
+            if (!registrar) {
+                alert('لطفاً ثبت کننده را انتخاب کنید.');
+                return;
+            }
+            if (!amount || amount <= 0) {
+                alert('مقدار باید عددی مثبت باشد.');
+                return;
+            }
+
+            const updatedData = {
+                date: date,
+                registrar: registrar,
+                amount: amount,
+                description: editDescription.value.trim() || '(بدون توضیح)'
+            };
+
+            if (item.type === 'add') {
+                const source = editSourceSelect.value;
+                if (!source || source === '— هیچ منبعی ثبت نشده —') {
+                    alert('لطفاً منبع (از طریق) را انتخاب کنید.');
+                    return;
+                }
+                updatedData.source = source;
+            }
+
+            if (item.type === 'withdraw') {
+                updatedData.person = editPerson.value;
+            }
+
+            let testInventory = 0;
+            for (const t of transactions) {
+                if (t.id === id) continue;
+                if (t.type === 'add') testInventory += t.amount;
+                else if (t.type === 'withdraw') testInventory -= t.amount;
+            }
+            if (item.type === 'add') testInventory += amount;
+            else if (item.type === 'withdraw') testInventory -= amount;
+
+            if (testInventory < 0) {
+                if (!confirm('توجه: این تغییر باعث منفی شدن موجودی می‌شود. آیا مطمئن هستید؟')) {
+                    return;
+                }
+            }
+
+            editTransaction(id, updatedData);
+            closeModal(editModal);
+        }
+
+        // ============================================
+        // SOURCE FORM
+        // ============================================
+        function handleAddSource(e) {
+            e.preventDefault();
+            const name = newSourceName.value.trim();
+            if (!name) {
+                alert('لطفاً نام منبع را وارد کنید.');
+                return;
+            }
+
+            if (sources.some(s => s.name === name)) {
+                alert('این منبع قبلاً ثبت شده است.');
+                return;
+            }
+
+            addSource(name);
+            newSourceName.value = '';
+            closeModal(sourceModal);
+        }
+
+        // ============================================
+        // FILTER SOURCE
+        // ============================================
+        function handleSourceFilter() {
+            currentSourceFilter = sourceFilter.value;
+            updateUI();
+            renderHistory();
+        }
+
+        function clearSourceFilterHandler() {
+            sourceFilter.value = '';
+            currentSourceFilter = '';
+            updateUI();
+            renderHistory();
+        }
+
+        // ============================================
+        // SEARCH
+        // ============================================
+        function handleSearch() {
+            currentSearchQuery = searchInput.value.trim();
+            renderHistory();
+            if (currentSearchQuery) {
+                updateUI();
+            }
+        }
+
+        function clearSearchHandler() {
+            searchInput.value = '';
+            currentSearchQuery = '';
+            renderHistory();
+            updateUI();
+            searchInput.focus();
+        }
+
+        // ============================================
+        // TAB HANDLER
+        // ============================================
+        function handleTabClick(filter) {
+            currentFilter = filter;
+            tabBtns.forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-filter="${filter}"]`)?.classList.add('active');
+            updateUI();
+            renderHistory();
+        }
+
+        // ============================================
+        // CLOSE MODALS
+        // ============================================
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const modalId = this.dataset.close;
+                document.getElementById(modalId).classList.remove('active');
+            });
+        });
+
+        // ============================================
+        // INIT
+        // ============================================
+        function init() {
+            const today = getTodayDate();
+            addDate.value = today;
+            withdrawDate.value = today;
+
+            if (!initFirebase()) {
+                showToast('خطا در اتصال به سرور! لطفاً صفحه را مجدداً بارگذاری کنید.', 'error');
+                return;
+            }
+
+            loadDataFromFirebase();
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    handleTabClick(this.dataset.filter);
+                });
+            });
+
+            searchInput.addEventListener('input', handleSearch);
+            clearSearch.addEventListener('click', clearSearchHandler);
+
+            sourceFilter.addEventListener('change', handleSourceFilter);
+            clearSourceFilter.addEventListener('click', clearSourceFilterHandler);
+
+            openAddBtn.addEventListener('click', () => {
+                updateAllSelects();
+                openModal(addModal);
+            });
+            openWithdrawBtn.addEventListener('click', () => openModal(withdrawModal));
+
+            addForm.addEventListener('submit', handleAdd);
+            withdrawForm.addEventListener('submit', handleWithdraw);
+            editForm.addEventListener('submit', handleEdit);
+            sourceForm.addEventListener('submit', handleAddSource);
+
+            addSourceBtn.addEventListener('click', () => {
+                newSourceName.value = '';
+                openModal(sourceModal);
+            });
+
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.modal-box').forEach(box => {
+                box.addEventListener('click', e => e.stopPropagation());
+            });
+
+            document.querySelector('#editModal .modal-close').addEventListener('click', () => {
+                closeModal(editModal);
+            });
+            document.querySelector('#sourceModal .modal-close').addEventListener('click', () => {
+                closeModal(sourceModal);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+</script>
+
+</body>
+</html>
