@@ -1126,6 +1126,11 @@
                 <span class="badge" id="iranCount">0</span>
                 <span class="person-total" id="iranTotal">(۰)</span>
             </button>
+            <button data-filter="پرداخت به مزار">
+                <i class="fas fa-mosque"></i> پرداخت به مزار
+                <span class="badge" id="mazarCount">0</span>
+                <span class="person-total" id="mazarTotal">(۰)</span>
+            </button>
         </div>
 
         <div class="history-table-wrapper">
@@ -1238,6 +1243,7 @@
                     <option value="احسان الله">احسان الله</option>
                     <option value="مصارف دوکان">مصارف دوکان</option>
                     <option value="پرداخت به ایران">پرداخت به ایران</option>
+                    <option value="پرداخت به مزار">پرداخت به مزار</option>
                 </select>
             </div>
             <div class="form-group">
@@ -1288,6 +1294,7 @@
                     <option value="احسان الله">احسان الله</option>
                     <option value="مصارف دوکان">مصارف دوکان</option>
                     <option value="پرداخت به ایران">پرداخت به ایران</option>
+                    <option value="پرداخت به مزار">پرداخت به مزار</option>
                 </select>
             </div>
             <div class="form-group" id="editSourceGroup">
@@ -1436,6 +1443,7 @@
         const ehsanCount = document.getElementById('ehsanCount');
         const dokanCount = document.getElementById('dokanCount');
         const iranCount = document.getElementById('iranCount');
+        const mazarCount = document.getElementById('mazarCount');
         const hajiTotal = document.getElementById('hajiTotal');
         const ostaTotal = document.getElementById('ostaTotal');
         const mojibTotal = document.getElementById('mojibTotal');
@@ -1443,6 +1451,7 @@
         const ehsanTotal = document.getElementById('ehsanTotal');
         const dokanTotal = document.getElementById('dokanTotal');
         const iranTotal = document.getElementById('iranTotal');
+        const mazarTotal = document.getElementById('mazarTotal');
 
         const newSourceName = document.getElementById('newSourceName');
         const sourceForm = document.getElementById('sourceForm');
@@ -1586,7 +1595,8 @@
                 'اسدالله': 'نمایش برداشت‌های اسدالله',
                 'احسان الله': 'نمایش برداشت‌های احسان الله',
                 'مصارف دوکان': 'نمایش برداشت‌های مصارف دوکان',
-                'پرداخت به ایران': 'نمایش برداشت‌های پرداخت به ایران'
+                'پرداخت به ایران': 'نمایش برداشت‌های پرداخت به ایران',
+                'پرداخت به مزار': 'نمایش برداشت‌های پرداخت به مزار'
             };
             filterLabel.textContent = filterNames[currentFilter] || 'نمایش همه';
 
@@ -1600,9 +1610,9 @@
             addCount.textContent = allAdds.length;
             withdrawCount.textContent = allWithdraws.length;
 
-            const persons = ['حاجی محمد رحیم', 'استا امرالله', 'مجیب الرحمن', 'اسدالله', 'احسان الله', 'مصارف دوکان', 'پرداخت به ایران'];
-            const counts = [hajiCount, ostaCount, mojibCount, asadCount, ehsanCount, dokanCount, iranCount];
-            const totals = [hajiTotal, ostaTotal, mojibTotal, asadTotal, ehsanTotal, dokanTotal, iranTotal];
+            const persons = ['حاجی محمد رحیم', 'استا امرالله', 'مجیب الرحمن', 'اسدالله', 'احسان الله', 'مصارف دوکان', 'پرداخت به ایران', 'پرداخت به مزار'];
+            const counts = [hajiCount, ostaCount, mojibCount, asadCount, ehsanCount, dokanCount, iranCount, mazarCount];
+            const totals = [hajiTotal, ostaTotal, mojibTotal, asadTotal, ehsanTotal, dokanTotal, iranTotal, mazarTotal];
 
             persons.forEach((person, index) => {
                 const items = transactions.filter(t => t.type === 'withdraw' && t.person === person);
